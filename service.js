@@ -29,7 +29,7 @@ const m = (...args) => args // eslint-disable-line id-length
   .reduce((result, arg) => ({
     ...result,
     ...arg,
-  }), {});
+  }), {})
 
 export const makePayment = ({
   processDate,
