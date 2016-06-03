@@ -1,4 +1,3 @@
-require('babel-register')({
-  presets: [ 'es2015' ]
-})
-require('./test')
+import * as service from './service'
+
+console.log(service.getReport())
