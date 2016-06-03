@@ -13,6 +13,7 @@ import * as service from './service'
       amountCents: 150000,
       recipientName: 'David Mattemy',
       customerCode: '123124152512515345345',
+      referenceNumber: Date.now(),
     })
     console.log(batchResponse)
     console.log()

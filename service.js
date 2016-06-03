@@ -40,7 +40,7 @@ export const makePayment = ({
   recipientName,
   customerCode,
   subMerchantId,
-  referenceNumber = 0,
+  referenceNumber,
 }) => new Promise((resolve, reject) => {
   const criteria = m(
     {process_now: processDate ? 0 : 1},
