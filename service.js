@@ -3,6 +3,7 @@ import fetch from 'node-fetch'
 import {parseString} from 'xml2js'
 import promisify from 'node-promisify'
 import get from 'lodash/get'
+import moment from 'moment'
 
 import {getUrl} from './url-utils'
 
@@ -23,20 +24,29 @@ const getAuthorizationHeader = (apiKey) => ({
   Authorization: `Passcode ${getPasscode(apiKey)}`,
 })
 
+const m = (...args) => args // eslint-disable-line id-length
+  .filter((arg) => !!arg)
+  .reduce((result, arg) => ({
+    ...result,
+    ...arg,
+  }), {});
+
 export const makePayment = ({
+  processDate,
   bankNumber,
   transitNumber,
   accountNumber,
   amountCents,
   recipientName,
   customerCode,
+  subMerchantId,
   referenceNumber = 0,
 }) => new Promise((resolve, reject) => {
-  const criteria = {
-    process_now: 1,
-    // optional sub merchant id
-    // sub_merchant_id: 'TEST',
-  }
+  const criteria = m(
+    {process_now: processDate ? 0 : 1},
+    subMerchantId && {sub_merchant_id: 'TEST'},
+    processDate && {process_date: moment(processDate).format('YYYYMMDD')},
+  )
 
   const formData = {
     criteria: {
