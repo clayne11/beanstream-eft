@@ -1,22 +1,41 @@
 import request from 'request'
 import fetch from 'node-fetch'
+import {parseString} from 'xml2js'
+import promisify from 'node-promisify'
+import get from 'lodash/get'
 
+import {getUrl} from './url-utils'
+
+const LOGIN_COMPANY = 'casalova'
 const MERCHANT_ID = '300202493'
 
-const BATCH_API_KEY = 'DA1815E80Af548cfbffaC5c30599622e'
-
-const PASSCODE = new Buffer(`${MERCHANT_ID}:${BATCH_API_KEY}`).toString('base64')
+const BATCH_PAYMENTS_API_KEY = 'DA1815E80Af548cfbffaC5c30599622e'
+const BATCH_REPORTING_API_KEY = '4C253654FF484d5AaF7Ed0F0e0d3c46B'
 
 const BATCH_PAYMENTS_URL = 'https://www.beanstream.com/api/v1/batchpayments'
 const BATCH_REPORTING_URL = 'https://www.beanstream.com/scripts/report.aspx'
 
-const getAuthorizationHeader = () => ({
-  Authorization: `Passcode ${PASSCODE}`,
+const parseXml = promisify(parseString)
+
+const getPasscode = (apiKey) => new Buffer(`${MERCHANT_ID}:${apiKey}`).toString('base64')
+
+const getAuthorizationHeader = (apiKey) => ({
+  Authorization: `Passcode ${getPasscode(apiKey)}`,
 })
 
-export const makePayment = () => new Promise((resolve, reject) => {
+export const makePayment = ({
+  bankNumber,
+  transitNumber,
+  accountNumber,
+  amountCents,
+  recipientName,
+  customerCode,
+  referenceNumber = 0,
+}) => new Promise((resolve, reject) => {
   const criteria = {
     process_now: 1,
+    // optional sub merchant id
+    // sub_merchant_id: 'TEST',
   }
 
   const formData = {
@@ -27,7 +46,7 @@ export const makePayment = () => new Promise((resolve, reject) => {
       },
     },
     filename: {
-      value: 'A,C,TEST,TEST,TEST,TEST,10000,TESTREF,NAME,TEST',
+      value: `E,D,${bankNumber},${transitNumber},${accountNumber},${amountCents},${referenceNumber},${recipientName},${customerCode}`,
       options: {
         filename: 'testing.csv',
         contentType: 'text/csv',
@@ -38,46 +57,43 @@ export const makePayment = () => new Promise((resolve, reject) => {
   const options = {
     url: BATCH_PAYMENTS_URL,
     headers: {
-      ...getAuthorizationHeader(),
+      ...getAuthorizationHeader(BATCH_PAYMENTS_API_KEY),
     },
     formData,
   }
 
   request.post(options, (error, response, body) => {
-    console.log('--- Request ---')
-    console.log('Headers')
-    console.log(response.request.headers)
-    console.log('\n\n')
-
-    console.log('--- Response ---')
-    console.log('Status code')
-    console.log(response.statusCode)
-    console.log('\n')
-    console.log('Body')
-    console.log(body)
-    console.log('\n\n')
-
     if (error || response.statusCode !== 200) {
       console.log(`ERROR: ${error}`)
       reject(error)
       return
     }
 
-    const info = JSON.parse(body)
-    console.log(info)
-    resolve(info)
-    return
+    resolve(JSON.parse(body))
   })
 })
 
-export const getReport = () => fetch(BATCH_REPORTING_URL, {
-  method: 'GET',
-  headers: {
-    'Accept': 'application/json',
-    'Content-Type': 'application/json',
-  },
-  body: JSON.stringify({
-    firstParam: 'yourValue',
-    secondParam: 'yourOtherValue',
+export const getReport = async (batchId) => {
+  batchId = 10000029
+  const url = getUrl({
+    baseUrl: BATCH_REPORTING_URL,
+    query: {
+      loginCompany: LOGIN_COMPANY,
+      merchantId: MERCHANT_ID,
+      passCode: BATCH_REPORTING_API_KEY,
+      rptFormat: 'XML',
+      rptVersion: '1.1',
+      rptType: 'BATCH_EFTTRANS',
+      rptRangeSelector: 1,
+      rptStartBatchId: batchId,
+      rptEndBatchId: batchId,
+    },
   })
-})
+  const response = await fetch(url, {
+    method: 'GET',
+  })
+  const xml = await response.text()
+  const responseJson = await parseXml(xml)
+  const row = get(responseJson, 'BATCH_EFTTRANS.row[0].$')
+  return row
+}
