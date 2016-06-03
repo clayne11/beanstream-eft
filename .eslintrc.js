@@ -531,7 +531,7 @@ module.exports = {
     // require or disallow use of semicolons instead of ASI
     'semi': [
       2,
-      'never'
+      'always'
     ],
     // sort variables within the same declaration block
     'sort-vars': 0,

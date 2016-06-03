@@ -1,11 +1,11 @@
-import parseArgs from 'minimist'
-import * as service from './service'
+import parseArgs from 'minimist';
+import * as service from './service';
 
 (async function() {
-  const {batchId} = parseArgs(process.argv.slice(2))
+  const {batchId} = parseArgs(process.argv.slice(2));
 
   if (!batchId) {
-    console.log('--- creating payment ---')
+    console.log('--- creating payment ---');
     const batchResponse = await service.makePayment({
       bankNumber: '003',
       transitNumber: '41231',
@@ -14,14 +14,14 @@ import * as service from './service'
       recipientName: 'David Mattemy',
       customerCode: '123124152512515345345',
       referenceNumber: Date.now(),
-    })
-    console.log(batchResponse)
-    console.log()
-    const {batch_id} = batchResponse
-    console.log(await service.getReport(batch_id))
-    return
+    });
+    console.log(batchResponse);
+    console.log();
+    const {batch_id} = batchResponse;
+    console.log(await service.getReport(batch_id));
+    return;
   }
 
-  console.log('--- fetching report ---')
-  console.log(await service.getReport(batchId))
-})()
+  console.log('--- fetching report ---');
+  console.log(await service.getReport(batchId));
+})();
