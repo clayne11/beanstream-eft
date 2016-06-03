@@ -74,7 +74,6 @@ export const makePayment = ({
 })
 
 export const getReport = async (batchId) => {
-  batchId = 10000029
   const url = getUrl({
     baseUrl: BATCH_REPORTING_URL,
     query: {
