@@ -79,7 +79,28 @@ export const makePayment = ({
       return;
     }
 
-    resolve(JSON.parse(body));
+    const {
+      code,
+      message,
+      batch_id: batchId,
+      process_date,
+    } = JSON.parse(body);
+    if (code !== 1) {
+      const formattedError = new Error(message);
+      formattedError.code = code;
+      throw error;
+    }
+
+    const batchProcessDate = moment(process_date, 'YYYYMMDD')
+      .utcOffset(0)
+      .startOf('day')
+      .toDate();
+    console.log(batchProcessDate.toString())
+
+    resolve({
+      batchId,
+      processDate: batchProcessDate,
+    });
   });
 });
 
